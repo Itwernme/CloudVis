@@ -2,14 +2,10 @@
 
 #include "inc/main.h"
 
-#ifndef RENDER_RES
-#define RENDER_RES 720, 576
-#endif
-
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(RENDER_RES, "");
+    InitWindow(DRAW_RES, "");
     ChangeDirectory(GetApplicationDirectory());
 
     BeginDrawing();

@@ -1,3 +1,5 @@
+#include "inc/utils.h"
+
 #include <raylib.h>
 #include <math.h>
 #include <rcamera.h>
@@ -26,18 +28,25 @@ void MoveCamera(Camera *camera, float delta){
     }
 
     // Keyboard support
+    Vector3 mov = {0};
     if (IsKeyDown(KEY_W)) CameraMoveForward(camera, cameraMoveSpeed, true);
     if (IsKeyDown(KEY_A)) CameraMoveRight(camera, -cameraMoveSpeed, true);
     if (IsKeyDown(KEY_S)) CameraMoveForward(camera, -cameraMoveSpeed, true);
     if (IsKeyDown(KEY_D)) CameraMoveRight(camera, cameraMoveSpeed, true);
 
-    if (IsKeyDown(KEY_Q)) CameraMoveUp(camera, cameraMoveSpeed);
-    if (IsKeyDown(KEY_E)) CameraMoveUp(camera, -cameraMoveSpeed);
+    if (IsKeyDown(KEY_Q) && camera->target.y < 10) CameraMoveUp(camera, cameraMoveSpeed);
+    if (IsKeyDown(KEY_E) && camera->target.y > 0) CameraMoveUp(camera, -cameraMoveSpeed);
 
     // Zoom target distance
-    CameraMoveToTarget(camera, -0.5*GetMouseWheelMove());
-    if (IsKeyDown(KEY_MINUS)) CameraMoveToTarget(camera, cameraZoomSpeed);
-    if (IsKeyDown(KEY_EQUAL)) CameraMoveToTarget(camera, -cameraZoomSpeed);
+    if (camera->projection == CAMERA_ORTHOGRAPHIC){
+        camera->fovy += -0.6*GetMouseWheelMove();
+        if (IsKeyDown(KEY_MINUS)) camera->fovy += cameraZoomSpeed;
+        if (IsKeyDown(KEY_EQUAL)) camera->fovy += -cameraZoomSpeed;
+    } else {
+        CameraMoveToTarget(camera, -0.6*GetMouseWheelMove());
+        if (IsKeyDown(KEY_MINUS)) CameraMoveToTarget(camera, cameraZoomSpeed);
+        if (IsKeyDown(KEY_EQUAL)) CameraMoveToTarget(camera, -cameraZoomSpeed);
+    }
 }
 
 void resize(){

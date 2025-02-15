@@ -15,6 +15,8 @@ uniform mat4 vpi;
 
 uniform vec2 resolution;
 uniform float time;
+uniform int nSteps = 1024;
+uniform float dist = 25.0;
 
 out vec4 finalColor;
 
@@ -35,21 +37,19 @@ float centre(vec2 p, float size) {
 
 float ray_cast(in vec3 ro, in vec3 rd)
 {
-    const int NUMBER_OF_STEPS = 1024;
-    const float MAX_DISTANCE = 25.0;
-    float stepSize = MAX_DISTANCE / NUMBER_OF_STEPS;
+    float stepSize = dist / nSteps;
     vec3 delta = rd * stepSize;
 
     vec3 pos = ro;
     float value = 0.0;
 
-    for (int i = 0; i < NUMBER_OF_STEPS; ++i)
+    for (int i = 0; i < nSteps; ++i)
     {
         vec3 mapPos = (pos / 10); // + vec3(0.5, 0, 0.5);
         //mapPos = round(mapPos * 401) / 401;
         float voxVal = texture(voxelData, mapPos).r;
         float oob = float(length(vec3(lessThan(mapPos, vec3(0.0))) + vec3(greaterThan(mapPos, vec3(1.0)))) == 0);
-        voxVal *= stepSize * 40 * oob;
+        voxVal *= stepSize * 400 * oob;
         value += voxVal;
         pos += delta;
     }
@@ -64,15 +64,15 @@ void main()
     //uv.x += random(uv + time + 1) * 0.005;
     //uv.y += random(uv + time) * 0.005;
 
-    vec3 ro = cameraPos;
-
-    vec4 near = vpi * vec4(uv, 0.0, 1.0);
+    vec4 near = vpi * vec4(uv, -1.0, 1.0);
     vec4 far = vpi * vec4(uv, 1.0, 1.0);
+
+    vec3 ro = near.xyz / near.w;
 
     vec3 rd = normalize((far.xyz / far.w) - (near.xyz / near.w));
 
     float cloud = ray_cast(ro, rd);
-    vec3 cloudCol = mix(vec3(0.2, 0.0, 0.7), vec3(1.0, 0.9, 0.3), cloud / 1.5);
+    vec3 cloudCol = mix(vec3(0.2, 0.0, 0.7), vec3(1.0, 0.9, 0.3), cloud / 2);
 
     // float s = (-ro.y) / rd.y;
     // vec3 p = ro + rd * s;

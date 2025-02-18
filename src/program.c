@@ -5,7 +5,7 @@
 int main(void)
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(DRAW_RES, "");
+    InitWindow(512+150, 512, "");//DRAW_RES
     ChangeDirectory(GetApplicationDirectory());
 
     BeginDrawing();

@@ -3,11 +3,14 @@
 
 #include <raylib.h>
 
-#define DRAW_RES 720, 576
+#define DRAW_RES 512, 512
 #define RENDER_RES 4096, 4096
 #define DRAW_NSTEPS 1024
 #define RENDER_NSTEPS 8192
+
 #define SIZE 401
+
+#define QUICKLOG TraceLog(LOG_WARNING, "here");
 
 extern Rectangle renderRect;
 extern RenderTexture2D render;

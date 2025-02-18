@@ -2060,6 +2060,7 @@ int GuiToggle(Rectangle bounds, const char *text, bool *active)
 
     bool temp = false;
     if (active == NULL) active = &temp;
+    else temp = *active;
 
     // Update control
     //--------------------------------------------------------------------
@@ -2096,6 +2097,7 @@ int GuiToggle(Rectangle bounds, const char *text, bool *active)
 
     if (state == STATE_FOCUSED) GuiTooltip(bounds);
     //--------------------------------------------------------------------
+    if (*active != temp) result = 1;
 
     return result;
 }

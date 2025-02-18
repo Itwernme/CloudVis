@@ -3,6 +3,8 @@
 
 #include <raylib.h>
 
+extern float density;
+
 extern void RenderScreenshot();
 
 extern void InitShader(void);

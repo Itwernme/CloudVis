@@ -15,17 +15,17 @@ Camera camera = {0};
 static float avgFPS;
 
 void InitMain(){
-    SetTargetFPS(10);
+    SetTargetFPS(15);
     SetTraceLogLevel(LOG_WARNING);
     render = LoadRenderTexture(DRAW_RES);
     resize();
 
     /* initialize game */
-    camera.position = (Vector3){5.0f, 5.0f, 14.0f};
-    camera.target = (Vector3){5.0f, 5.0f, 5.0f};
+    camera.position = (Vector3){0.0f, 7.0f, 10.0f};
+    camera.target = (Vector3){5.0f, 2.0f, 5.0f};
     camera.up = (Vector3){0.0f, 1.0f, 0.0f};
-    camera.fovy = 12.0f;
-    camera.projection = CAMERA_ORTHOGRAPHIC;
+    camera.fovy = 45.0f;//12
+    camera.projection = CAMERA_PERSPECTIVE;
 
     //DisableCursor();
     InitShader();
@@ -37,7 +37,7 @@ void UpdateMain(float delta){
     if (IsWindowResized()) resize();
 
     /* update game */
-    MoveCamera(&camera, delta);
+    if (CheckCollisionPointRec(GetMousePosition(), renderRect)) MoveCamera(&camera, delta);
 
     UpdateGUI(delta);
     UpdateShader(delta);
@@ -47,27 +47,45 @@ void UpdateMain(float delta){
 }
 
 void DrawMain(){
-    ClearBackground(WHITE);
-    DrawRectangleRec(renderRect, BLACK);
+    ClearBackground(BLACK);
+    DrawRectangleRec(renderRect, GRAY);
     BeginTextureMode(render);
-        ClearBackground(BLACK);
+        ClearBackground(GRAY);
 
         /* draw game */
         BeginMode3D(camera);
             DrawLine3D((Vector3){0}, (Vector3){10, 0, 0}, RED);
-            //DrawCube((Vector3){10, 0, 0}, 0.2, 0.2, 0.2, RED);
             DrawLine3D((Vector3){0}, (Vector3){0, 10, 0}, GREEN);
             DrawLine3D((Vector3){0}, (Vector3){0, 0, 10}, BLUE);
         EndMode3D();
 
         DrawShader();
-        DrawGUI();
+
+        if (isMarkers){
+            BeginMode3D(camera);
+                DrawBoundingBox((BoundingBox){{0, 0, 0},{10, 10, 10}}, BLACK);
+
+                DrawLine3D((Vector3){0, 0, camera.target.z}, (Vector3){10, 0, camera.target.z}, RED);
+                DrawLine3D((Vector3){camera.target.x, 0, 0}, (Vector3){camera.target.x, 10, 0}, GREEN);
+                DrawLine3D((Vector3){0, camera.target.y, 0}, (Vector3){0, camera.target.y, 10}, BLUE);
+
+                DrawLine3D((Vector3){0, camera.target.y, 0}, (Vector3){10, camera.target.y, 0}, RED);
+                DrawLine3D((Vector3){0, 0, camera.target.z}, (Vector3){0, 10, camera.target.z}, GREEN);
+                DrawLine3D((Vector3){camera.target.x, 0, 0}, (Vector3){camera.target.x, 0, 10}, BLUE);
+
+                DrawLine3D(camera.target, Vector3Add(camera.target, (Vector3){0.1, 0, 0}), RED);
+                DrawLine3D(camera.target, Vector3Add(camera.target, (Vector3){0, 0.1, 0}), GREEN);
+                DrawLine3D(camera.target, Vector3Add(camera.target, (Vector3){0, 0, 0.1}), BLUE);
+            EndMode3D();
+        }
         /* draw game */
 
         DrawText(TextFormat("%05.2f", avgFPS), 5, 5, 10, LIME);
     EndTextureMode();
 
     DrawTexturePro(render.texture, (Rectangle){ 0, 0, render.texture.width, -render.texture.height }, renderRect, (Vector2){0}, 0.0f, WHITE);
+
+    DrawGUI();
 }
 
 void DeInitMain(){

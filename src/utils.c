@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "inc/main.h"
+#include "inc/gui.h"
 
 void MoveCamera(Camera *camera, float delta){
     Vector2 mousePositionDelta = GetMouseDelta();
@@ -38,7 +39,7 @@ void MoveCamera(Camera *camera, float delta){
     if (IsKeyDown(KEY_E) && camera->target.y > 0) CameraMoveUp(camera, -cameraMoveSpeed);
 
     // Zoom target distance
-    if (camera->projection == CAMERA_ORTHOGRAPHIC){
+    if (camera->projection == CAMERA_ORTHOGRAPHIC){ //camera->projection == CAMERA_ORTHOGRAPHIC
         camera->fovy += -0.6*GetMouseWheelMove();
         if (IsKeyDown(KEY_MINUS)) camera->fovy += cameraZoomSpeed;
         if (IsKeyDown(KEY_EQUAL)) camera->fovy += -cameraZoomSpeed;
@@ -50,18 +51,24 @@ void MoveCamera(Camera *camera, float delta){
 }
 
 void resize(){
-    float renderScaleX = (float)GetScreenWidth() / render.texture.width;
+    float renderScaleX = (float)GetScreenWidth() / (render.texture.width + 150);
     float renderScaleY = (float)GetScreenHeight() / render.texture.height;
     float renderScale = fminf(renderScaleX, renderScaleY);
 
     renderRect.width = render.texture.width * renderScale;
     renderRect.height = render.texture.height * renderScale;
 
-    renderRect.x = (GetScreenWidth() - renderRect.width) / 2;
+    renderRect.x = (GetScreenWidth() - renderRect.width + 150 * renderScale) / 2;
     renderRect.y = (GetScreenHeight() - renderRect.height) / 2;
 
-    SetMouseOffset(-renderRect.x, -renderRect.y);
-    SetMouseScale(1.0f/renderScale, 1.0f/renderScale);
+    guiRect.width = 150 * renderScale;
+    guiRect.height = render.texture.height * renderScale;
+
+    guiRect.x = (GetScreenWidth() - renderRect.width - 150 * renderScale) / 2;
+    guiRect.y = (GetScreenHeight() - renderRect.height) / 2;
+
+    //SetMouseOffset(-renderRect.x, -renderRect.y);
+    //SetMouseScale(1.0f/renderScale, 1.0f/renderScale);
 }
 
 void Sort(char **data, int n){

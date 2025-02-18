@@ -17,6 +17,8 @@ uniform vec2 resolution;
 uniform float time;
 uniform int nSteps = 1024;
 uniform float dist = 25.0;
+uniform float density = 25.0;
+uniform int hard = 0;
 
 out vec4 finalColor;
 
@@ -49,7 +51,7 @@ float ray_cast(in vec3 ro, in vec3 rd)
         //mapPos = round(mapPos * 401) / 401;
         float voxVal = texture(voxelData, mapPos).r;
         float oob = float(length(vec3(lessThan(mapPos, vec3(0.0))) + vec3(greaterThan(mapPos, vec3(1.0)))) == 0);
-        voxVal *= stepSize * 400 * oob;
+        voxVal *= stepSize * density * oob;
         value += voxVal;
         pos += delta;
     }
@@ -72,7 +74,7 @@ void main()
     vec3 rd = normalize((far.xyz / far.w) - (near.xyz / near.w));
 
     float cloud = ray_cast(ro, rd);
-    vec3 cloudCol = mix(vec3(0.2, 0.0, 0.7), vec3(1.0, 0.9, 0.3), cloud / 2);
+    vec3 cloudCol = mix(vec3(0.4, 0.0, 0.4), vec3(1.0, 0.9, 0.3), cloud);
 
     // float s = (-ro.y) / rd.y;
     // vec3 p = ro + rd * s;
@@ -82,5 +84,5 @@ void main()
     // plane *= (s > 0 ? 1.0 : 0.0);
     //plane = vec3(0.0);
 
-    finalColor = vec4(cloudCol, cloud);
+    finalColor = vec4(cloudCol, (hard == 1 ? (cloud > 0 ? 1 : 0) : cloud * 2));
 }

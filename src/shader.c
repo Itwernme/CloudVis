@@ -10,11 +10,14 @@
 
 #include "inc/main.h"
 #include "inc/utils.h"
+#include "inc/gui.h"
 
 static Shader shader;
-static int voxelDataLoc, vpiLoc, timeLoc, resLoc, nStepsLoc, distLoc;
+static int voxelDataLoc, vpiLoc, timeLoc, resLoc, nStepsLoc, distLoc, densityLoc, hardLoc;
 static Texture whiteTex;
 static GLuint voxelTexId;
+
+float density = 40;
 
 void InitShader(){
     Image buf = GenImageColor(DRAW_RES, BLACK);
@@ -50,7 +53,7 @@ void InitShader(){
                 if (token != NULL) {
                     float value = TextToInteger(token);
                     if (value == 0) data[i] = 0;
-                    else data[i] = (1.0f/value)*1300;
+                    else data[i] = logf(1300.0f/value+1)*1.44f;
                     token = strtok(NULL, ",\n");
                 }
             }
@@ -86,6 +89,8 @@ void InitShader(){
     timeLoc = glGetUniformLocation(shader.id, "time");
     nStepsLoc = glGetUniformLocation(shader.id, "nSteps");
     distLoc = glGetUniformLocation(shader.id, "dist");
+    densityLoc = glGetUniformLocation(shader.id, "density");
+    hardLoc = glGetUniformLocation(shader.id, "hard");
 
     float resolution[2] = {DRAW_RES};
     SetShaderValue(shader, resLoc, resolution, SHADER_UNIFORM_VEC2);
@@ -107,11 +112,15 @@ void UpdateShader(float delta){
 
     float time = GetTime();
     SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
+
+    SetShaderValue(shader, densityLoc, &density, SHADER_UNIFORM_FLOAT);
+    int hard = isHardEdge;
+    SetShaderValue(shader, hardLoc, &hard, SHADER_UNIFORM_INT);
 }
 
 void DrawShader(){
     BeginShaderMode(shader);
-        DrawTexture(whiteTex, 0, 0, WHITE);
+        DrawTexture(whiteTex, 0, 0, BLANK);
     EndShaderMode();
 }
 
@@ -133,7 +142,7 @@ void RenderScreenshot(){
     SetShaderValueMatrix(shader, vpiLoc, viewProjInv);
 
     BeginTextureMode(target);
-        ClearBackground(BLACK);
+        ClearBackground(WHITE);
         BeginMode3D(camera);
             DrawLine3D((Vector3){0}, (Vector3){10, 0, 0}, RED);
             DrawLine3D((Vector3){0}, (Vector3){0, 10, 0}, GREEN);

@@ -15,7 +15,7 @@ Camera camera = {0};
 static float avgFPS;
 
 void InitMain(){
-    SetTargetFPS(15);
+    SetTargetFPS(20);
     SetTraceLogLevel(LOG_WARNING);
     render = LoadRenderTexture(DRAW_RES);
     resize();

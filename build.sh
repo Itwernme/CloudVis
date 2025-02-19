@@ -10,11 +10,11 @@ flags=""
 
 echo building...
 # Build
-cc -g -std=gnu99 -c src/*.c $flags || rm -f *.o
+gcc -g -std=gnu99 -c src/*.c $flags || rm -f *.o
 
 echo linking...
 # Link
-cc -o bin/$mainFile *.o -s -std=gnu99 $libs -Llib $localLibs
+gcc -o bin/$mainFile *.o -s -std=gnu99 $libs -Llib $localLibs
 rm -f *.o
 
 echo updating resources...

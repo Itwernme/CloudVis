@@ -35,8 +35,8 @@ void MoveCamera(Camera *camera, float delta){
     if (IsKeyDown(KEY_S)) CameraMoveForward(camera, -cameraMoveSpeed, true);
     if (IsKeyDown(KEY_D)) CameraMoveRight(camera, cameraMoveSpeed, true);
 
-    if (IsKeyDown(KEY_Q) && camera->target.y < 10) CameraMoveUp(camera, cameraMoveSpeed);
-    if (IsKeyDown(KEY_E) && camera->target.y > 0) CameraMoveUp(camera, -cameraMoveSpeed);
+    if (IsKeyDown(KEY_Q)) CameraMoveUp(camera, cameraMoveSpeed);// && camera->target.y < 10
+    if (IsKeyDown(KEY_E)) CameraMoveUp(camera, -cameraMoveSpeed);// && camera->target.y > 0
 
     // Zoom target distance
     if (camera->projection == CAMERA_ORTHOGRAPHIC){ //camera->projection == CAMERA_ORTHOGRAPHIC
@@ -51,20 +51,20 @@ void MoveCamera(Camera *camera, float delta){
 }
 
 void resize(){
-    float renderScaleX = (float)GetScreenWidth() / (render.texture.width + 150);
+    float renderScaleX = (float)GetScreenWidth() / (render.texture.width + GUI_WIDTH);
     float renderScaleY = (float)GetScreenHeight() / render.texture.height;
     float renderScale = fminf(renderScaleX, renderScaleY);
 
     renderRect.width = render.texture.width * renderScale;
     renderRect.height = render.texture.height * renderScale;
 
-    renderRect.x = (GetScreenWidth() - renderRect.width + 150 * renderScale) / 2;
+    renderRect.x = (GetScreenWidth() - renderRect.width + GUI_WIDTH * renderScale) / 2;
     renderRect.y = (GetScreenHeight() - renderRect.height) / 2;
 
-    guiRect.width = 150 * renderScale;
+    guiRect.width = GUI_WIDTH * renderScale;
     guiRect.height = render.texture.height * renderScale;
 
-    guiRect.x = (GetScreenWidth() - renderRect.width - 150 * renderScale) / 2;
+    guiRect.x = (GetScreenWidth() - renderRect.width - GUI_WIDTH * renderScale) / 2;
     guiRect.y = (GetScreenHeight() - renderRect.height) / 2;
 
     //SetMouseOffset(-renderRect.x, -renderRect.y);

@@ -33,6 +33,7 @@ static void UpdatePerspective(bool ortho){
 void InitGUI(void){
     GuiLoadStyle("res/style_dark.rgs");
     GuiSetStyle(VALUEBOX, SPINNER_BUTTON_WIDTH, 12);
+    GuiSetStyle(VALUEBOX, TEXT_PADDING, 2);
 }
 
 void UpdateGUI(float delta){
@@ -68,9 +69,9 @@ void DrawGUI(void){
     tempA = tempB;
 
     if (!editCam[0] && !editCam[1] && !editCam[2]){
-        cam[0] = camera.target.x / 10 * SIZE;
-        cam[1] = camera.target.y / 10 * SIZE;
-        cam[2] = camera.target.z / 10 * SIZE;
+        cam[0] = ((float)camera.target.x * SIZE) / 10.0;
+        cam[1] = ((float)camera.target.y * SIZE) / 10.0;
+        cam[2] = ((float)camera.target.z * SIZE) / 10.0;
     }
 
     tempA.width /= 3;
@@ -79,14 +80,14 @@ void DrawGUI(void){
     if (GuiSpinner(tempA, "Y", &cam[1], 0, SIZE, editCam[1])) editCam[1] = !editCam[1]; tempA.x += tempA.width+10;
     if (GuiSpinner(tempA, "Z", &cam[2], 0, SIZE, editCam[2])) editCam[2] = !editCam[2]; tempA.x += tempA.width+10;
 
-    tempB.y += basis.height;
-    tempA = tempB;
-
     if (!editCam[0] && !editCam[1] && !editCam[2]){
-        Vector3 newTarget = (Vector3){(double)cam[0] / SIZE * 10, (double)cam[1] / SIZE * 10, (double)cam[2] / SIZE * 10};
+        Vector3 newTarget = (Vector3){((float)cam[0] * 10.0) / SIZE, ((float)cam[1] * 10.0) / SIZE, ((float)cam[2] * 10.0) / SIZE};
         camera.position = Vector3Add(camera.position, Vector3Subtract(newTarget, camera.target));
         camera.target = newTarget;
     }
+
+    tempB.y += basis.height;
+    tempA = tempB;
 
     tempA.width /= 3;
     if (GuiButton(tempA, "X +")){

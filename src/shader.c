@@ -48,7 +48,7 @@ void InitShader(){
         char *token = strtok(csv, ",\n");
         UnloadFileText(csv);
         for (int x = 0; x < SIZE; x++) {
-            for (int z = 0; z < SIZE; z++) {
+            for (int z = SIZE-1; z >= 0; z--) {
                 int i = x+y*SIZE+z*SIZE*SIZE;
                 if (token != NULL) {
                     float value = TextToInteger(token);
@@ -66,9 +66,9 @@ void InitShader(){
     free(data);
 
     // wrapping
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);       // Set texture to repeat on x-axis
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);       // Set texture to repeat on y-axis
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);       // Set texture to repeat on z-axis
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);       // Set texture to repeat on x-axis : GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);       // Set texture to repeat on y-axis : GL_REPEAT
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);       // Set texture to repeat on z-axis : GL_MIRRORED_REPEAT
 
     // Magnification and minification filters
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);  // Alternative: GL_LINEAR
@@ -80,7 +80,7 @@ void InitShader(){
     // Load Shader
     // ----------------------------
 
-    shader = LoadShader(0, "res/raycast.glsl");
+    shader = LoadShader("", "res/raycast.glsl");//res/rayvert.glsl
 
     resLoc = GetShaderLocation(shader, "resolution");
     voxelDataLoc = glGetUniformLocation(shader.id, "voxelData");

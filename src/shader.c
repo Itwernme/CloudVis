@@ -82,7 +82,7 @@ void InitShader(){
 
     shader = LoadShader("", "res/raycast.glsl");//res/rayvert.glsl
 
-    resLoc = GetShaderLocation(shader, "resolution");
+    resLoc = GetShaderLocation(shader, "renderResolution");
     voxelDataLoc = glGetUniformLocation(shader.id, "voxelData");
     shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "cameraPos");
     vpiLoc = glGetUniformLocation(shader.id, "vpi");

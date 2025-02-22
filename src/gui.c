@@ -11,12 +11,13 @@
 
 Rectangle guiRect;
 
-bool isMarkers;
-bool isOrtho;
-bool isHardEdge;
+bool isMarkers = false;
+bool isOrtho = false;
+bool isHardEdge = true;
+float density = 0.5;
 
 static int cam[3];
-static bool editCam[3];
+static bool editCam[3] = {0};
 
 static void UpdatePerspective(bool ortho){
     isOrtho = ortho;
@@ -63,7 +64,7 @@ void DrawGUI(void){
     tempB.y += basis.height;
     tempA = tempB;
 
-    GuiSliderBar(tempA, "", "", &density, 2, 100);
+    GuiSliderBar(tempA, "", "", &density, 0, 1);
     GuiDrawText("density", tempA, TEXT_ALIGN_CENTER, GRAY);
     tempB.y += basis.height;
     tempA = tempB;
@@ -76,15 +77,24 @@ void DrawGUI(void){
 
     tempA.width /= 3;
     tempA.width -= 10; tempA.x += 10;
-    if (GuiSpinner(tempA, "X", &cam[0], 0, SIZE, editCam[0])) editCam[0] = !editCam[0]; tempA.x += tempA.width+10;
-    if (GuiSpinner(tempA, "Y", &cam[1], 0, SIZE, editCam[1])) editCam[1] = !editCam[1]; tempA.x += tempA.width+10;
-    if (GuiSpinner(tempA, "Z", &cam[2], 0, SIZE, editCam[2])) editCam[2] = !editCam[2]; tempA.x += tempA.width+10;
-
-    if (!editCam[0] && !editCam[1] && !editCam[2]){
-        Vector3 newTarget = (Vector3){((float)cam[0] * 10.0) / SIZE, ((float)cam[1] * 10.0) / SIZE, ((float)cam[2] * 10.0) / SIZE};
-        camera.position = Vector3Add(camera.position, Vector3Subtract(newTarget, camera.target));
-        camera.target = newTarget;
-    }
+    if (GuiValueBox(tempA, "X", &cam[0], 0, SIZE, editCam[0])){
+        editCam[0] = !editCam[0];
+        float new = ((float)cam[0] * 10.0) / SIZE;
+        camera.position.x += new - camera.target.x;
+        camera.target.x = new;
+    } tempA.x += tempA.width+10;
+    if (GuiValueBox(tempA, "Y", &cam[1], 0, SIZE, editCam[1])){
+        editCam[1] = !editCam[1];
+        float new = ((float)cam[1] * 10.0) / SIZE;
+        camera.position.y += new - camera.target.y;
+        camera.target.y = new;
+    } tempA.x += tempA.width+10;
+    if (GuiValueBox(tempA, "Z", &cam[2], 0, SIZE, editCam[2])){
+        editCam[2] = !editCam[2];
+        float new = ((float)cam[2] * 10.0) / SIZE;
+        camera.position.z += new - camera.target.z;
+        camera.target.z = new;
+    } tempA.x += tempA.width+10;
 
     tempB.y += basis.height;
     tempA = tempB;

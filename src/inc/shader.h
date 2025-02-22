@@ -3,7 +3,17 @@
 
 #include <raylib.h>
 
-extern float density;
+enum sLocNames {
+    S_VOXDATA,
+    S_VPI,
+    S_TIME,
+    S_RES,
+    S_NSTEPS,
+    S_DIST,
+    S_DENSITY,
+    S_HARD,
+    S_N_LOCS
+};
 
 extern void RenderScreenshot();
 

@@ -13,11 +13,23 @@
 #include "inc/gui.h"
 
 static Shader shader;
-static int voxelDataLoc, vpiLoc, timeLoc, resLoc, nStepsLoc, distLoc, densityLoc, hardLoc;
+//static int shaderLocs[S_N_LOCS];
+static struct {
+    int voxData;
+    int voxRes;
+
+    int camPos;
+    int vpi;
+    int renderRes;
+
+    int nSteps;
+    int dist;
+    int density;
+    int hard;
+} shaderLocs;
+//static int voxelDataLoc, vpiLoc, timeLoc, resLoc, nStepsLoc, distLoc, densityLoc, hardLoc;
 static Texture whiteTex;
 static GLuint voxelTexId;
-
-float density = 40;
 
 void InitShader(){
     Image buf = GenImageColor(DRAW_RES, BLACK);
@@ -30,8 +42,6 @@ void InitShader(){
 
     glBindTexture(GL_TEXTURE_2D, 0); // unbind
 
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
     glGenTextures(1, &voxelTexId);
 
     glBindTexture(GL_TEXTURE_3D, voxelTexId);
@@ -40,13 +50,11 @@ void InitShader(){
     memset(data, 0, SIZE*SIZE*SIZE*sizeof(float));
 
     // load in data values
-
     FilePathList paths = LoadDirectoryFiles("res/data");
     Sort(paths.paths, paths.count);
     for (int y = 0; y < SIZE; y++) {
         char *csv = LoadFileText(paths.paths[y]);
         char *token = strtok(csv, ",\n");
-        UnloadFileText(csv);
         for (int x = 0; x < SIZE; x++) {
             for (int z = SIZE-1; z >= 0; z--) {
                 int i = x+y*SIZE+z*SIZE*SIZE;
@@ -58,6 +66,7 @@ void InitShader(){
                 }
             }
         }
+        UnloadFileText(csv);
     }
     UnloadDirectoryFiles(paths);
 
@@ -80,23 +89,31 @@ void InitShader(){
     // Load Shader
     // ----------------------------
 
-    shader = LoadShader("", "res/raycast.glsl");//res/rayvert.glsl
+    shader = LoadShader(NULL, "res/raycast.glsl");//res/rayvert.glsl
 
-    resLoc = GetShaderLocation(shader, "renderResolution");
-    voxelDataLoc = glGetUniformLocation(shader.id, "voxelData");
-    shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "cameraPos");
-    vpiLoc = glGetUniformLocation(shader.id, "vpi");
-    timeLoc = glGetUniformLocation(shader.id, "time");
-    nStepsLoc = glGetUniformLocation(shader.id, "nSteps");
-    distLoc = glGetUniformLocation(shader.id, "dist");
-    densityLoc = glGetUniformLocation(shader.id, "density");
-    hardLoc = glGetUniformLocation(shader.id, "hard");
+    shaderLocs.voxData = glGetUniformLocation(shader.id, "voxelData");
+    shaderLocs.voxRes = GetShaderLocation(shader, "voxelResolution");
 
-    float resolution[2] = {DRAW_RES};
-    SetShaderValue(shader, resLoc, resolution, SHADER_UNIFORM_VEC2);
+    shaderLocs.camPos = GetShaderLocation(shader, "cameraPos");
+    shaderLocs.vpi = glGetUniformLocation(shader.id, "vpi");
+    shaderLocs.renderRes = GetShaderLocation(shader, "renderResolution");
+
+    shaderLocs.nSteps = glGetUniformLocation(shader.id, "nSteps");
+    shaderLocs.dist = glGetUniformLocation(shader.id, "dist");
+    shaderLocs.density = glGetUniformLocation(shader.id, "density");
+    shaderLocs.hard = glGetUniformLocation(shader.id, "hard");
+
+    {
+    float renderRes[2] = {DRAW_RES};
+    SetShaderValue(shader, shaderLocs.renderRes, renderRes, SHADER_UNIFORM_VEC2);
+    int voxRes = 401;
+    SetShaderValue(shader, shaderLocs.renderRes, &voxRes, SHADER_UNIFORM_INT);
+    int nSteps = DRAW_NSTEPS;
+    SetShaderValue(shader, shaderLocs.nSteps, &nSteps, SHADER_UNIFORM_INT);
+    }
 
     glUseProgram(shader.id);
-    glUniform1i(voxelDataLoc, 1);
+    glUniform1i(shaderLocs.voxData, 1);
     glActiveTexture(GL_TEXTURE0 + 1);
     glBindTexture(GL_TEXTURE_3D, voxelTexId);
 }
@@ -108,14 +125,11 @@ void UpdateShader(float delta){
     Matrix view = GetCameraViewMatrix(&camera);
     Matrix proj = GetCameraProjectionMatrix(&camera, (float)whiteTex.width / whiteTex.height);
     Matrix viewProjInv = MatrixInvert(MatrixMultiply(view, proj));
-    SetShaderValueMatrix(shader, vpiLoc, viewProjInv);
+    SetShaderValueMatrix(shader, shaderLocs.vpi, viewProjInv);
 
-    float time = GetTime();
-    SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
-
-    SetShaderValue(shader, densityLoc, &density, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader, shaderLocs.density, &density, SHADER_UNIFORM_FLOAT);
     int hard = isHardEdge;
-    SetShaderValue(shader, hardLoc, &hard, SHADER_UNIFORM_INT);
+    SetShaderValue(shader, shaderLocs.hard, &hard, SHADER_UNIFORM_INT);
 }
 
 void DrawShader(){
@@ -132,21 +146,21 @@ void RenderScreenshot(){
     UnloadImage(buf);
 
     float newRes[2] = {RENDER_RES};
-    SetShaderValue(shader, resLoc, newRes, SHADER_UNIFORM_VEC2);
+    SetShaderValue(shader, shaderLocs.renderRes, newRes, SHADER_UNIFORM_VEC2);
     int newNSteps = RENDER_NSTEPS;
-    SetShaderValue(shader, nStepsLoc, &newNSteps, SHADER_UNIFORM_INT);
+    SetShaderValue(shader, shaderLocs.nSteps, &newNSteps, SHADER_UNIFORM_INT);
 
     Matrix view = GetCameraViewMatrix(&camera);
     Matrix proj = GetCameraProjectionMatrix(&camera, (float)base.width / base.height);
     Matrix viewProjInv = MatrixInvert(MatrixMultiply(view, proj));
-    SetShaderValueMatrix(shader, vpiLoc, viewProjInv);
+    SetShaderValueMatrix(shader, shaderLocs.vpi, viewProjInv);
 
     BeginTextureMode(target);
         ClearBackground(WHITE);
         BeginMode3D(camera);
-            DrawLine3D((Vector3){0}, (Vector3){10, 0, 0}, RED);
-            DrawLine3D((Vector3){0}, (Vector3){0, 10, 0}, GREEN);
-            DrawLine3D((Vector3){0}, (Vector3){0, 0, 10}, BLUE);
+            DrawCube((Vector3){5, 0, 0}, 10, 0.05, 0.05, RED);
+            DrawCube((Vector3){0, 5, 0}, 0.05, 10, 0.05, GREEN);
+            DrawCube((Vector3){0, 0, 5}, 0.05, 0.05, 10, BLUE);
         EndMode3D();
         BeginShaderMode(shader);
             DrawTexture(base, 0, 0, WHITE);
@@ -162,9 +176,9 @@ void RenderScreenshot(){
     ExportImage(buf, TextFormat("render(%02d.%02d.%d %02d.%02d.%02d).png", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec));
 
     float oldRes[2] = {DRAW_RES};
-    SetShaderValue(shader, resLoc, oldRes, SHADER_UNIFORM_VEC2);
+    SetShaderValue(shader, shaderLocs.renderRes, oldRes, SHADER_UNIFORM_VEC2);
     int oldNSteps = DRAW_NSTEPS;
-    SetShaderValue(shader, nStepsLoc, &oldNSteps, SHADER_UNIFORM_INT);
+    SetShaderValue(shader, shaderLocs.nSteps, &oldNSteps, SHADER_UNIFORM_INT);
 
     UnloadImage(buf);
 }

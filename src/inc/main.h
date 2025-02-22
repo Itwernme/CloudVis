@@ -3,11 +3,11 @@
 
 #include <raylib.h>
 
-#define DRAW_RES 512, 1024
-#define GUI_WIDTH 256
+#define DRAW_RES 300, 400
+#define GUI_WIDTH 128
 #define RENDER_RES 2048, 4096
-#define DRAW_NSTEPS 1024
-#define RENDER_NSTEPS 8192
+#define DRAW_NSTEPS 2028
+#define RENDER_NSTEPS 4096
 
 #define SIZE 401
 

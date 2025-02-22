@@ -7,6 +7,7 @@ extern Rectangle guiRect;
 extern bool isMarkers;
 extern bool isOrtho;
 extern bool isHardEdge;
+extern float density;
 
 extern void InitGUI(void);
 extern void UpdateGUI(float delta);

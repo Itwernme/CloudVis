@@ -21,13 +21,12 @@ void InitMain(){
     resize();
 
     /* initialize game */
-    camera.position = (Vector3){0.0f, 7.0f, 10.0f};
-    camera.target = (Vector3){5.0f, 2.0f, 5.0f};
+    camera.position = (Vector3){0.0f, 5.0f, 10.0f};
+    camera.target = (Vector3){5.0f, 5.0f, 5.0f};
     camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     camera.fovy = 45.0f;//12
     camera.projection = CAMERA_PERSPECTIVE;
 
-    //DisableCursor();
     InitShader();
     InitGUI();
     /* initialize game */
@@ -80,10 +79,10 @@ void DrawMain(){
         }
         /* draw game */
 
-        DrawText(TextFormat("%05.2f", avgFPS), 5, 5, 10, LIME);
     EndTextureMode();
 
     DrawTexturePro(render.texture, (Rectangle){ 0, 0, render.texture.width, -render.texture.height }, renderRect, (Vector2){0}, 0.0f, WHITE);
+    DrawText(TextFormat("%05.2f", avgFPS), renderRect.x+5, renderRect.y+5, 20, LIME);
 
     DrawGUI();
 }

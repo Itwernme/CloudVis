@@ -1,12 +1,15 @@
 #include "inc/shader.h"
 
+#include "../lib/glad.h"
 #include <string.h>
 #include <raylib.h>
-#include <GLES3/gl3.h>
+//#include <GLES3/gl3.h>
+//#include <GL/freeglut.h>
 #include <stdlib.h>
-#include <rcamera.h>
+#include "../lib/rcamera.h"
 #include <raymath.h>
 #include <time.h>
+#include <rlgl.h>
 
 #include "inc/main.h"
 #include "inc/utils.h"
@@ -39,8 +42,13 @@ void InitShader(){
     // ----------------------------
     // Load Voxel Data
     // ----------------------------
+    TraceLog(LOG_DEBUG, "Begining 3d texture");
+
+    gladLoadGL();
 
     glBindTexture(GL_TEXTURE_2D, 0); // unbind
+
+    TraceLog(LOG_DEBUG, "Opengl working!");
 
     glGenTextures(1, &voxelTexId);
 
@@ -48,6 +56,8 @@ void InitShader(){
 
     float *data = malloc(SIZE*SIZE*SIZE*sizeof(float));
     memset(data, 0, SIZE*SIZE*SIZE*sizeof(float));
+
+    TraceLog(LOG_DEBUG, "Loading data...");
 
     // load in data values
     FilePathList paths = LoadDirectoryFiles("res/data");
@@ -70,6 +80,8 @@ void InitShader(){
     }
     UnloadDirectoryFiles(paths);
 
+    TraceLog(LOG_DEBUG, "Data loaded");
+
     glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, SIZE, SIZE, SIZE, 0, GL_RED, GL_FLOAT, data);
 
     free(data);
@@ -91,17 +103,17 @@ void InitShader(){
 
     shader = LoadShader(NULL, "res/raycast.glsl");//res/rayvert.glsl
 
-    shaderLocs.voxData = glGetUniformLocation(shader.id, "voxelData");
+    shaderLocs.voxData = GetShaderLocation(shader, "voxelData");
     shaderLocs.voxRes = GetShaderLocation(shader, "voxelResolution");
 
     shaderLocs.camPos = GetShaderLocation(shader, "cameraPos");
-    shaderLocs.vpi = glGetUniformLocation(shader.id, "vpi");
+    shaderLocs.vpi = GetShaderLocation(shader, "vpi");
     shaderLocs.renderRes = GetShaderLocation(shader, "renderResolution");
 
-    shaderLocs.nSteps = glGetUniformLocation(shader.id, "nSteps");
-    shaderLocs.dist = glGetUniformLocation(shader.id, "dist");
-    shaderLocs.density = glGetUniformLocation(shader.id, "density");
-    shaderLocs.hard = glGetUniformLocation(shader.id, "hard");
+    shaderLocs.nSteps = GetShaderLocation(shader, "nSteps");
+    shaderLocs.dist = GetShaderLocation(shader, "dist");
+    shaderLocs.density = GetShaderLocation(shader, "density");
+    shaderLocs.hard = GetShaderLocation(shader, "hard");
 
     {
     float renderRes[2] = {DRAW_RES};
@@ -110,12 +122,14 @@ void InitShader(){
     SetShaderValue(shader, shaderLocs.renderRes, &voxRes, SHADER_UNIFORM_INT);
     int nSteps = DRAW_NSTEPS;
     SetShaderValue(shader, shaderLocs.nSteps, &nSteps, SHADER_UNIFORM_INT);
-    }
 
-    glUseProgram(shader.id);
-    glUniform1i(shaderLocs.voxData, 1);
-    glActiveTexture(GL_TEXTURE0 + 1);
+    //glUseProgram(shader.id);
+    //glUniform1i(shaderLocs.voxData, 1);
+    int texPos = 1;
+    SetShaderValue(shader, shaderLocs.voxData, &texPos, SHADER_UNIFORM_INT);
+    rlActiveTextureSlot(1);
     glBindTexture(GL_TEXTURE_3D, voxelTexId);
+    }
 }
 
 void UpdateShader(float delta){

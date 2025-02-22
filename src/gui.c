@@ -4,7 +4,7 @@
 #include <raymath.h>
 #define RAYGUI_IMPLEMENTATION
 #include "../lib/raygui.h"
-#include <rcamera.h>
+#include "../lib/rcamera.h"
 
 #include "inc/shader.h"
 #include "inc/main.h"

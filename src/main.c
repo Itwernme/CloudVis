@@ -28,6 +28,7 @@ void InitMain(){
     camera.projection = CAMERA_PERSPECTIVE;
 
     InitShader();
+    TraceLog(LOG_DEBUG, "Shader initiated");
     InitGUI();
     /* initialize game */
 }

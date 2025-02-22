@@ -4,17 +4,18 @@ cd /storage/Programming/CloudVis
 
 # Options
 mainFile="program"
-libs="-lm -ldl -lpthread -lGLEW -lGL -lraylib"
+libs="-lm -lpthread -lopengl32 -lraylib"
+# -ldl
 localLibs=""
 flags=""
 
 echo building...
 # Build
-gcc -g -std=gnu99 -c src/*.c $flags || rm -f *.o
+x86_64-w64-mingw32-gcc -g -std=gnu99 -c src/*.c $flags || rm -f *.o
 
 echo linking...
 # Link
-gcc -o bin/$mainFile *.o -s -std=gnu99 $libs -Llib $localLibs
+x86_64-w64-mingw32-gcc -o bin/$mainFile *.o -s -std=gnu99 $libs -Llib $localLibs
 rm -f *.o
 
 echo updating resources...
@@ -24,4 +25,4 @@ cp -r res/ bin/
 
 echo running...
 # Run
-./bin/$mainFile
+./bin/$mainFile.exe

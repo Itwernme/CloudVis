@@ -2,7 +2,7 @@
 
 #include <raylib.h>
 #include <math.h>
-#include <rcamera.h>
+#include "../lib/rcamera.h"
 #include <string.h>
 
 #include "inc/main.h"

@@ -1,38 +1,29 @@
-#include "inc/gui.h"
+#include "gui.h"
 
 #include <raylib.h>
 #include <raymath.h>
 #define RAYGUI_IMPLEMENTATION
-#include "../lib/raygui.h"
-#include "../lib/rcamera.h"
+#include "raylib/raygui.h"
+#include "raylib/rcamera.h"
 
-#include "inc/shader.h"
-#include "inc/main.h"
+#include "shader.h"
+#include "main.h"
 
 Rectangle guiRect;
 
 bool isMarkers = false;
 bool isOrtho = false;
 bool isHardEdge = true;
-float density = 0.5;
+bool isHardCube = false;
+float density = 0.03f;
 
 static int cam[3];
 static bool editCam[3] = {0};
 
-static void UpdatePerspective(bool ortho){
-    isOrtho = ortho;
-    if (ortho){
-        camera.projection = CAMERA_ORTHOGRAPHIC;
-        CameraMoveToTarget(&camera, 15 - Vector3Length(Vector3Subtract(camera.position, camera.target)));
-        camera.fovy = 12;
-    } else {
-        camera.projection = CAMERA_PERSPECTIVE;
-        camera.fovy = 45;
-    }
-}
+static void UpdatePerspective(bool ortho);
 
 void InitGUI(void){
-    GuiLoadStyle("res/style_dark.rgs");
+    GuiLoadStyle("res/theme.rgs");
     GuiSetStyle(VALUEBOX, SPINNER_BUTTON_WIDTH, 12);
     GuiSetStyle(VALUEBOX, TEXT_PADDING, 2);
 }
@@ -60,38 +51,45 @@ void DrawGUI(void){
     tempB.y += basis.height;
     tempA = tempB;
 
+    tempA.width /= 3;
+    GuiToggle(tempA, "hard cube", &isHardCube); tempA.x += tempA.width;
+    GuiToggle(tempA, "", NULL); tempA.x += tempA.width;
+    GuiToggle(tempA, "", NULL);
+    tempB.y += basis.height;
+    tempA = tempB;
+
     if (GuiButton(tempA, "render")) RenderScreenshot();
     tempB.y += basis.height;
     tempA = tempB;
 
-    GuiSliderBar(tempA, "", "", &density, 0, 1);
+    GuiSliderBar(tempA, "", "", &density, 0.005f, 0.06f);
     GuiDrawText("density", tempA, TEXT_ALIGN_CENTER, GRAY);
     tempB.y += basis.height;
     tempA = tempB;
 
     if (!editCam[0] && !editCam[1] && !editCam[2]){
-        cam[0] = ((float)camera.target.x * SIZE) / 10.0;
-        cam[1] = ((float)camera.target.y * SIZE) / 10.0;
-        cam[2] = ((float)camera.target.z * SIZE) / 10.0;
+        cam[0] = ((float)camera.target.x * size) / 10.0;
+        cam[1] = ((float)camera.target.y * size) / 10.0;
+        cam[2] = ((float)camera.target.z * size) / 10.0;
     }
 
     tempA.width /= 3;
     tempA.width -= 10; tempA.x += 10;
-    if (GuiValueBox(tempA, "X", &cam[0], 0, SIZE, editCam[0])){
+    if (GuiValueBox(tempA, "X", &cam[0], 0, size, editCam[0])){
         editCam[0] = !editCam[0];
-        float new = ((float)cam[0] * 10.0) / SIZE;
+        float new = ((float)cam[0] * 10.0) / size;
         camera.position.x += new - camera.target.x;
         camera.target.x = new;
     } tempA.x += tempA.width+10;
-    if (GuiValueBox(tempA, "Y", &cam[1], 0, SIZE, editCam[1])){
+    if (GuiValueBox(tempA, "Y", &cam[1], 0, size, editCam[1])){
         editCam[1] = !editCam[1];
-        float new = ((float)cam[1] * 10.0) / SIZE;
+        float new = ((float)cam[1] * 10.0) / size;
         camera.position.y += new - camera.target.y;
         camera.target.y = new;
     } tempA.x += tempA.width+10;
-    if (GuiValueBox(tempA, "Z", &cam[2], 0, SIZE, editCam[2])){
+    if (GuiValueBox(tempA, "Z", &cam[2], 0, size, editCam[2])){
         editCam[2] = !editCam[2];
-        float new = ((float)cam[2] * 10.0) / SIZE;
+        float new = ((float)cam[2] * 10.0) / size;
         camera.position.z += new - camera.target.z;
         camera.target.z = new;
     } tempA.x += tempA.width+10;
@@ -141,4 +139,16 @@ void DrawGUI(void){
 
 void DeInitGUI(void){
 
+}
+
+static void UpdatePerspective(bool ortho){
+    isOrtho = ortho;
+    if (ortho){
+        camera.projection = CAMERA_ORTHOGRAPHIC;
+        CameraMoveToTarget(&camera, 15 - Vector3Length(Vector3Subtract(camera.position, camera.target)));
+        camera.fovy = 12;
+    } else {
+        camera.projection = CAMERA_PERSPECTIVE;
+        camera.fovy = 45;
+    }
 }

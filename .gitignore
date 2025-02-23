@@ -1,4 +1,6 @@
 *.o
 *.a
-bin/*
-res/data*
+build/*
+res/data/*
+.clangd
+.old/*

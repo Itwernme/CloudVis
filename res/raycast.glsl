@@ -3,16 +3,17 @@
 #define PI 3.14159265359
 
 uniform sampler3D voxelData;
-uniform int voxelResolution = 401;
+uniform int voxelRes;
 
 uniform vec3 cameraPos;
 uniform mat4 vpi;
-uniform vec2 renderResolution;
+uniform vec2 renderRes;
 
 uniform int nSteps;
-uniform float dist = 30.0;
+uniform float dist;
 uniform float density;
-uniform bool hard;
+uniform bool hardEdges;
+uniform bool hardCubes;
 
 out vec4 finalColor;
 
@@ -59,7 +60,7 @@ float ray_cast(in vec3 ro, in vec3 rd, in vec2 bounds)
     {
         mask = betterStep(s.xyz, min(s.yzx, s.zxy));
         u = min(s.x, min(s.y, s.z));
-        value += texture(voxelData, (v.y >= 0) ? (v / voxelResolution) : ((v * vec3(1, -1, 1) + vec3(0, 1, 0)) / voxelResolution)).r * density * (u - t);
+        value += texture(voxelData, v / voxelRes).r * density * (hardCubes ? 1.0 : (u - t));
         t = u;
         s += mask * d;
         v += mask * si;
@@ -69,19 +70,19 @@ float ray_cast(in vec3 ro, in vec3 rd, in vec2 bounds)
 
 void main()
 {
-    vec2 uv = (gl_FragCoord.xy - renderResolution.xy / 2) / renderResolution.xy * 2;
+    vec2 uv = (gl_FragCoord.xy - renderRes.xy / 2) / renderRes.xy * 2;
 
     vec4 near = vpi * vec4(uv, -1.0, 1.0);
     vec4 far = vpi * vec4(uv, 1.0, 1.0);
 
-    vec3 ro = (near.xyz / near.w) * voxelResolution / 10.0;
+    vec3 ro = (near.xyz / near.w) * voxelRes / 10.0;
     vec3 rd = normalize((far.xyz / far.w) - (near.xyz / near.w));
 
-    vec2 bounds = intersectAABB(ro, rd, vec3(0, -400, 0), vec3(voxelResolution));
+    vec2 bounds = intersectAABB(ro, rd, vec3(0), vec3(voxelRes));
     bounds.x = max(bounds.x, 0.0);
 
     float cloud = ray_cast(ro, rd, bounds);
     vec3 cloudCol = mix(vec3(0.4, 0.0, 0.4), vec3(1.0, 0.9, 0.3), cloud);
 
-    finalColor = vec4(cloudCol, (hard ? (cloud > 0 ? 1 : 0) : cloud * 2));
+    finalColor = vec4(cloudCol, (hardEdges ? (cloud > 0 ? 1 : 0) : cloud * 2));
 }

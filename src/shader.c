@@ -1,19 +1,18 @@
-#include "inc/shader.h"
+#include "shader.h"
 
 #include <string.h>
 #include <raylib.h>
-#include <GLES3/gl3.h>
 #include <stdlib.h>
-#include <rcamera.h>
 #include <raymath.h>
 #include <time.h>
+#include "glad/glad.h"
+#include "raylib/rcamera.h"
 
-#include "inc/main.h"
-#include "inc/utils.h"
-#include "inc/gui.h"
+#include "main.h"
+#include "utils.h"
+#include "gui.h"
 
 static Shader shader;
-//static int shaderLocs[S_N_LOCS];
 static struct {
     int voxData;
     int voxRes;
@@ -25,11 +24,17 @@ static struct {
     int nSteps;
     int dist;
     int density;
-    int hard;
+    int hardEdges;
+    int hardCubes;
 } shaderLocs;
-//static int voxelDataLoc, vpiLoc, timeLoc, resLoc, nStepsLoc, distLoc, densityLoc, hardLoc;
 static Texture whiteTex;
 static GLuint voxelTexId;
+
+int size;
+static float maxVal;
+
+static int readSettings();
+static void loadDataToTexture(GLuint id);
 
 void InitShader(){
     Image buf = GenImageColor(DRAW_RES, BLACK);
@@ -40,39 +45,13 @@ void InitShader(){
     // Load Voxel Data
     // ----------------------------
 
+    gladLoadGL();
+
     glBindTexture(GL_TEXTURE_2D, 0); // unbind
 
     glGenTextures(1, &voxelTexId);
 
-    glBindTexture(GL_TEXTURE_3D, voxelTexId);
-
-    float *data = malloc(SIZE*SIZE*SIZE*sizeof(float));
-    memset(data, 0, SIZE*SIZE*SIZE*sizeof(float));
-
-    // load in data values
-    FilePathList paths = LoadDirectoryFiles("res/data");
-    Sort(paths.paths, paths.count);
-    for (int y = 0; y < SIZE; y++) {
-        char *csv = LoadFileText(paths.paths[y]);
-        char *token = strtok(csv, ",\n");
-        for (int x = 0; x < SIZE; x++) {
-            for (int z = SIZE-1; z >= 0; z--) {
-                int i = x+y*SIZE+z*SIZE*SIZE;
-                if (token != NULL) {
-                    float value = TextToInteger(token);
-                    if (value == 0) data[i] = 0;
-                    else data[i] = logf(1300.0f/value+1)*1.44f;
-                    token = strtok(NULL, ",\n");
-                }
-            }
-        }
-        UnloadFileText(csv);
-    }
-    UnloadDirectoryFiles(paths);
-
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, SIZE, SIZE, SIZE, 0, GL_RED, GL_FLOAT, data);
-
-    free(data);
+    loadDataToTexture(voxelTexId);
 
     // wrapping
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);       // Set texture to repeat on x-axis : GL_CLAMP_TO_EDGE
@@ -91,31 +70,36 @@ void InitShader(){
 
     shader = LoadShader(NULL, "res/raycast.glsl");//res/rayvert.glsl
 
-    shaderLocs.voxData = glGetUniformLocation(shader.id, "voxelData");
-    shaderLocs.voxRes = GetShaderLocation(shader, "voxelResolution");
+    shaderLocs.voxData = GetShaderLocation(shader, "voxelData");
+    shaderLocs.voxRes = GetShaderLocation(shader, "voxelRes");
 
     shaderLocs.camPos = GetShaderLocation(shader, "cameraPos");
-    shaderLocs.vpi = glGetUniformLocation(shader.id, "vpi");
-    shaderLocs.renderRes = GetShaderLocation(shader, "renderResolution");
+    shaderLocs.vpi = GetShaderLocation(shader, "vpi");
+    shaderLocs.renderRes = GetShaderLocation(shader, "renderRes");
 
-    shaderLocs.nSteps = glGetUniformLocation(shader.id, "nSteps");
-    shaderLocs.dist = glGetUniformLocation(shader.id, "dist");
-    shaderLocs.density = glGetUniformLocation(shader.id, "density");
-    shaderLocs.hard = glGetUniformLocation(shader.id, "hard");
+    shaderLocs.nSteps = GetShaderLocation(shader, "nSteps");
+    shaderLocs.dist = GetShaderLocation(shader, "dist");
+    shaderLocs.density = GetShaderLocation(shader, "density");
+    shaderLocs.hardEdges = GetShaderLocation(shader, "hardEdges");
+    shaderLocs.hardCubes = GetShaderLocation(shader, "hardCubes");
 
     {
     float renderRes[2] = {DRAW_RES};
     SetShaderValue(shader, shaderLocs.renderRes, renderRes, SHADER_UNIFORM_VEC2);
-    int voxRes = 401;
-    SetShaderValue(shader, shaderLocs.renderRes, &voxRes, SHADER_UNIFORM_INT);
+    int voxRes = size;
+    SetShaderValue(shader, shaderLocs.voxRes, &voxRes, SHADER_UNIFORM_INT);
     int nSteps = DRAW_NSTEPS;
     SetShaderValue(shader, shaderLocs.nSteps, &nSteps, SHADER_UNIFORM_INT);
-    }
+    float dist = DIST;
+    SetShaderValue(shader, shaderLocs.dist, &dist, SHADER_UNIFORM_FLOAT);
 
     glUseProgram(shader.id);
     glUniform1i(shaderLocs.voxData, 1);
+    // int texPos = 1;
+    // SetShaderValue(shader, shaderLocs.voxData, &texPos, SHADER_UNIFORM_INT);
     glActiveTexture(GL_TEXTURE0 + 1);
     glBindTexture(GL_TEXTURE_3D, voxelTexId);
+    }
 }
 
 void UpdateShader(float delta){
@@ -128,14 +112,22 @@ void UpdateShader(float delta){
     SetShaderValueMatrix(shader, shaderLocs.vpi, viewProjInv);
 
     SetShaderValue(shader, shaderLocs.density, &density, SHADER_UNIFORM_FLOAT);
-    int hard = isHardEdge;
-    SetShaderValue(shader, shaderLocs.hard, &hard, SHADER_UNIFORM_INT);
+    int hardEdges = isHardEdge;
+    SetShaderValue(shader, shaderLocs.hardEdges, &hardEdges, SHADER_UNIFORM_INT);
+    int hardCubes = isHardCube;
+    SetShaderValue(shader, shaderLocs.hardCubes, &hardCubes, SHADER_UNIFORM_INT);
 }
 
 void DrawShader(){
     BeginShaderMode(shader);
         DrawTexture(whiteTex, 0, 0, BLANK);
     EndShaderMode();
+}
+
+void DeInitShader(){
+    UnloadTexture(whiteTex);
+    glDeleteTextures(1, &voxelTexId);
+    UnloadShader(shader);
 }
 
 void RenderScreenshot(){
@@ -183,8 +175,51 @@ void RenderScreenshot(){
     UnloadImage(buf);
 }
 
-void DeInitShader(){
-    UnloadTexture(whiteTex);
-    glDeleteTextures(1, &voxelTexId);
-    UnloadShader(shader);
+static int readSettings(){
+    char *settings = LoadFileText("res/input/settings.txt");
+    if (settings == NULL) return 1;
+    char *token = strtok(settings, " ");
+    size = TextToInteger(token);
+    token = strtok(NULL, " ");
+    maxVal = TextToFloat(token);
+    if (size <= 0 || maxVal <= 0.0f) return 1;
+    return 0;
+}
+
+static void loadDataToTexture(GLuint id){
+    glBindTexture(GL_TEXTURE_3D, id);
+    if (readSettings()) TraceLog(LOG_FATAL, "res/input/settings.txt not found\n\tNo valid settings file found\n\tsettings.txt should be formatted: \"<size>[int] <max value>[float]\" eg. \"401 1300.0\"");
+
+    float *data = malloc(size*size*size*sizeof(float));
+    memset(data, 0, size*size*size*sizeof(float));
+
+    float divisor = logf(maxVal+1);
+    float maxDataValue = 0.0f;
+    // load in data values
+    FilePathList paths = LoadDirectoryFiles("res/input/data");
+    Sort(paths.paths, paths.count);
+    for (int y = 0; y < size; y++) {
+        char *csv = LoadFileText(paths.paths[y]);
+        char *token = strtok(csv, ",\n");
+        for (int x = 0; x < size; x++) {
+            for (int z = size-1; z >= 0; z--) {
+                int i = x+y*size+z*size*size;
+                if (token != NULL) {
+                    float value = TextToInteger(token);
+                    if (value == 0) data[i] = 0;
+                    else data[i] = logf(value+1)/divisor;
+                    if (value > maxDataValue) maxDataValue = value;
+                    token = strtok(NULL, ",\n");
+                }
+            }
+        };
+        UnloadFileText(csv);
+    }
+    UnloadDirectoryFiles(paths);
+
+    if (maxDataValue > maxVal) TraceLog(LOG_WARNING, "Max value in data %f, exceeds settings max %f", maxDataValue, maxVal);
+
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, size, size, size, 0, GL_RED, GL_FLOAT, data);
+
+    free(data);
 }

@@ -1,12 +1,12 @@
-#include "inc/main.h"
+#include "main.h"
 
 #include <raylib.h>
-#include <math.h>
 #include <raymath.h>
+#include <math.h>
 
-#include "inc/utils.h"
-#include "inc/shader.h"
-#include "inc/gui.h"
+#include "utils.h"
+#include "shader.h"
+#include "gui.h"
 
 Rectangle renderRect;
 RenderTexture2D render;
@@ -28,6 +28,7 @@ void InitMain(){
     camera.projection = CAMERA_PERSPECTIVE;
 
     InitShader();
+    TraceLog(LOG_DEBUG, "Shader initiated");
     InitGUI();
     /* initialize game */
 }

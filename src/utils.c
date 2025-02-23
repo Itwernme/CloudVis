@@ -1,12 +1,12 @@
-#include "inc/utils.h"
+#include "utils.h"
 
 #include <raylib.h>
 #include <math.h>
-#include <rcamera.h>
 #include <string.h>
+#include "raylib/rcamera.h"
 
-#include "inc/main.h"
-#include "inc/gui.h"
+#include "main.h"
+#include "gui.h"
 
 void MoveCamera(Camera *camera, float delta){
     Vector2 mousePositionDelta = GetMouseDelta();
@@ -29,7 +29,6 @@ void MoveCamera(Camera *camera, float delta){
     }
 
     // Keyboard support
-    Vector3 mov = {0};
     if (IsKeyDown(KEY_W)) CameraMoveForward(camera, cameraMoveSpeed, true);
     if (IsKeyDown(KEY_A)) CameraMoveRight(camera, -cameraMoveSpeed, true);
     if (IsKeyDown(KEY_S)) CameraMoveForward(camera, -cameraMoveSpeed, true);

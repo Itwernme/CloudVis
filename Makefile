@@ -3,7 +3,7 @@ VERSION ?= 0.2.0-alpha
 # options: LINUX WINDOWS
 PLATFORM ?= LINUX
 
-SOURCE := program.c main.c utils.c shader.c gui.c ext/glad.c
+SOURCE := program.c main.c utils.c shader.c gui.c ext/glad.c guiparts.c
 
 LIBS += -lm -lraylib
 
@@ -24,7 +24,7 @@ ifeq ($(PLATFORM),WINDOWS)
     OUTPUT = $(NAME)_$(VERSION).exe
 endif
 
-CFLAGS += -g -std=gnu99 -Wall -Werror
+CFLAGS += -g -std=gnu99 -Wall
 CFLAGS += -I$(IDIR)
 
 # -L$(LDIR)

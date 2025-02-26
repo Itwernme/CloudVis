@@ -1,1 +1,4 @@
-401 130000
+MaxValue                            130000 # Max steps for each ray
+ResX                                401    # Number of points per column
+ResY                                401    # Number of files
+ResZ                                401    # Number of columns per file

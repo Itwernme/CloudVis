@@ -2,13 +2,24 @@
 #define GUI_H
 
 #include <raylib.h>
+#include "guiparts.h"
 
+struct GuiData{
+    bool isMarkers;
+    bool isOrtho;
+    bool isHardEdge;
+    bool isHardCube;
+    bool isDiminish;
+    bool isAxis;
+    bool isGrid;
+    SliderData density;
+    SliderData minValue;
+    SliderData maxValue;
+    ValueBoxData camPos[3];
+};
+
+extern struct GuiData guiData;
 extern Rectangle guiRect;
-extern bool isMarkers;
-extern bool isOrtho;
-extern bool isHardEdge;
-extern bool isHardCube;
-extern float density;
 
 extern void InitGUI(void);
 extern void UpdateGUI(float delta);

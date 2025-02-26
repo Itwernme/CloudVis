@@ -1,9 +1,11 @@
 #include "utils.h"
 
+#include <stdio.h>
 #include <raylib.h>
 #include <math.h>
 #include <string.h>
 #include "raylib/rcamera.h"
+#include "raylib/rini.h"
 
 #include "main.h"
 #include "gui.h"
@@ -24,8 +26,12 @@ void MoveCamera(Camera *camera, float delta){
 
     // Mouse support
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
-        CameraYaw(camera, -mousePositionDelta.x*0.003f, true);
-        CameraPitch(camera, -mousePositionDelta.y*0.003f, true, true, false);
+        if (IsKeyDown(KEY_LEFT_SHIFT)){
+
+        } else {
+            CameraYaw(camera, -mousePositionDelta.x*0.003f, true);
+            CameraPitch(camera, -mousePositionDelta.y*0.003f, true, true, false);
+        }
     }
 
     // Keyboard support
@@ -47,6 +53,7 @@ void MoveCamera(Camera *camera, float delta){
         if (IsKeyDown(KEY_MINUS)) CameraMoveToTarget(camera, cameraZoomSpeed);
         if (IsKeyDown(KEY_EQUAL)) CameraMoveToTarget(camera, -cameraZoomSpeed);
     }
+    camera->fovy = fmaxf(camera->fovy, 0.1f);
 }
 
 void resize(){
@@ -84,4 +91,46 @@ void Sort(char **data, int n){
     }
     if (!swap) break;
   }
+}
+
+int getConfigInt(rini_config *config, const char *key, int defaultValue, const char *defaultDesc){
+    for (unsigned int i = 0; i < config->count; i++)
+    {
+        if (strcmp(key, config->values[i].key) == 0) // Key found
+        {
+            return TextToInteger(config->values[i].text);
+        }
+    }
+    rini_set_config_value(config, key, defaultValue, defaultDesc);
+    return defaultValue;
+}
+
+// float getConfigFloat(rini_config *config, const char *key, float defaultValue, const char *defaultDesc){
+//     for (unsigned int i = 0; i < config->count; i++)
+//     {
+//         if (strcmp(key, config->values[i].key) == 0) // Key found
+//         {
+//             return TextToFloat(config->values[i].text);
+//         }
+//     }
+//     rini_set_config_value_text(config, key, TextFormat("%g", defaultValue), defaultDesc);
+//     return defaultValue;
+// }
+
+float getConfigFloat(rini_config *config, const char *key, float defaultValue, const char *defaultDesc){
+    for (unsigned int i = 0; i < config->count; i++)
+    {
+        if (strcmp(key, config->values[i].key) == 0) // Key found
+        {
+            return TextToFloat(config->values[i].text);
+        }
+    }
+    char value_text[RINI_MAX_TEXT_SIZE] = { 0 };
+
+    sprintf(value_text, "%i", (int)defaultValue);
+    TraceLog(LOG_WARNING, "%s", value_text);
+
+    rini_set_config_value_text(config, key, value_text, defaultDesc);
+
+    return defaultValue;
 }

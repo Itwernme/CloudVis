@@ -15,7 +15,13 @@ enum sLocNames {
     S_N_LOCS
 };
 
-extern int size;
+struct DataSettings {
+    Vector3 size;
+    float maxValue;
+};
+
+extern struct DataSettings dataSettings;
+extern float voxScale;
 
 extern void RenderScreenshot();
 

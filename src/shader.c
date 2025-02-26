@@ -7,6 +7,7 @@
 #include <time.h>
 #include "glad/glad.h"
 #include "raylib/rcamera.h"
+#include "raylib/rini.h"
 
 #include "main.h"
 #include "utils.h"
@@ -16,25 +17,35 @@ static Shader shader;
 static struct {
     int voxData;
     int voxRes;
+    int voxScale;
 
     int camPos;
     int vpi;
     int renderRes;
 
     int nSteps;
-    int dist;
     int density;
+    int diminish;
     int hardEdges;
     int hardCubes;
+
+    int minValue;
+    int maxValue;
+
+    int grid;
+    int axis;
+    int axisThickness;
+    int gridThickness;
+    int gridScale;
 } shaderLocs;
 static Texture whiteTex;
 static GLuint voxelTexId;
 
-int size;
-static float maxVal;
+struct DataSettings dataSettings;
+float voxScale;
 
-static int readSettings();
 static void loadDataToTexture(GLuint id);
+static void loadDataSettings();
 
 void InitShader(){
     Image buf = GenImageColor(DRAW_RES, BLACK);
@@ -50,6 +61,9 @@ void InitShader(){
     glBindTexture(GL_TEXTURE_2D, 0); // unbind
 
     glGenTextures(1, &voxelTexId);
+
+    loadDataSettings();
+    voxScale = Vector3Length(Vector3Scale(dataSettings.size, 0.1f));
 
     loadDataToTexture(voxelTexId);
 
@@ -72,34 +86,40 @@ void InitShader(){
 
     shaderLocs.voxData = GetShaderLocation(shader, "voxelData");
     shaderLocs.voxRes = GetShaderLocation(shader, "voxelRes");
+    shaderLocs.voxScale = GetShaderLocation(shader, "voxelScale");
 
     shaderLocs.camPos = GetShaderLocation(shader, "cameraPos");
     shaderLocs.vpi = GetShaderLocation(shader, "vpi");
     shaderLocs.renderRes = GetShaderLocation(shader, "renderRes");
 
     shaderLocs.nSteps = GetShaderLocation(shader, "nSteps");
-    shaderLocs.dist = GetShaderLocation(shader, "dist");
     shaderLocs.density = GetShaderLocation(shader, "density");
+    shaderLocs.diminish = GetShaderLocation(shader, "diminish");
     shaderLocs.hardEdges = GetShaderLocation(shader, "hardEdges");
     shaderLocs.hardCubes = GetShaderLocation(shader, "hardCubes");
 
-    {
+    shaderLocs.minValue = GetShaderLocation(shader, "minValue");
+    shaderLocs.maxValue = GetShaderLocation(shader, "maxValue");
+
+    shaderLocs.grid = GetShaderLocation(shader, "grid");
+    shaderLocs.axis = GetShaderLocation(shader, "axis");
+    shaderLocs.axisThickness = GetShaderLocation(shader, "axisThickness");
+    shaderLocs.gridThickness = GetShaderLocation(shader, "gridThickness");
+    shaderLocs.gridScale = GetShaderLocation(shader, "gridScale");
+
     float renderRes[2] = {DRAW_RES};
     SetShaderValue(shader, shaderLocs.renderRes, renderRes, SHADER_UNIFORM_VEC2);
-    int voxRes = size;
-    SetShaderValue(shader, shaderLocs.voxRes, &voxRes, SHADER_UNIFORM_INT);
-    int nSteps = DRAW_NSTEPS;
-    SetShaderValue(shader, shaderLocs.nSteps, &nSteps, SHADER_UNIFORM_INT);
-    float dist = DIST;
-    SetShaderValue(shader, shaderLocs.dist, &dist, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader, shaderLocs.voxRes, &dataSettings.size, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader, shaderLocs.nSteps, &settings.maxNsteps, SHADER_UNIFORM_INT);
+    SetShaderValue(shader, shaderLocs.voxScale, &voxScale, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader, shaderLocs.axisThickness, &settings.axisThickness, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(shader, shaderLocs.gridThickness, &settings.gridThickness, SHADER_UNIFORM_FLOAT);
 
     glUseProgram(shader.id);
     glUniform1i(shaderLocs.voxData, 1);
-    // int texPos = 1;
-    // SetShaderValue(shader, shaderLocs.voxData, &texPos, SHADER_UNIFORM_INT);
     glActiveTexture(GL_TEXTURE0 + 1);
     glBindTexture(GL_TEXTURE_3D, voxelTexId);
-    }
+
 }
 
 void UpdateShader(float delta){
@@ -111,11 +131,24 @@ void UpdateShader(float delta){
     Matrix viewProjInv = MatrixInvert(MatrixMultiply(view, proj));
     SetShaderValueMatrix(shader, shaderLocs.vpi, viewProjInv);
 
-    SetShaderValue(shader, shaderLocs.density, &density, SHADER_UNIFORM_FLOAT);
-    int hardEdges = isHardEdge;
-    SetShaderValue(shader, shaderLocs.hardEdges, &hardEdges, SHADER_UNIFORM_INT);
-    int hardCubes = isHardCube;
-    SetShaderValue(shader, shaderLocs.hardCubes, &hardCubes, SHADER_UNIFORM_INT);
+    float fBuf;
+    int iBuf;
+    fBuf = guiData.density.value;
+    SetShaderValue(shader, shaderLocs.density, &fBuf, SHADER_UNIFORM_FLOAT);
+    fBuf = guiData.minValue.value / dataSettings.maxValue;
+    SetShaderValue(shader, shaderLocs.minValue, &fBuf, SHADER_UNIFORM_FLOAT);
+    fBuf = guiData.maxValue.value / dataSettings.maxValue;
+    SetShaderValue(shader, shaderLocs.maxValue, &fBuf, SHADER_UNIFORM_FLOAT);
+    iBuf = guiData.isHardEdge;
+    SetShaderValue(shader, shaderLocs.hardEdges, &iBuf, SHADER_UNIFORM_INT);
+    iBuf = guiData.isHardCube;
+    SetShaderValue(shader, shaderLocs.hardCubes, &iBuf, SHADER_UNIFORM_INT);
+    iBuf = guiData.isDiminish;
+    SetShaderValue(shader, shaderLocs.diminish, &iBuf, SHADER_UNIFORM_INT);
+    iBuf = guiData.isAxis;
+    SetShaderValue(shader, shaderLocs.axis, &iBuf, SHADER_UNIFORM_INT);
+    iBuf = guiData.isGrid;
+    SetShaderValue(shader, shaderLocs.grid, &iBuf, SHADER_UNIFORM_INT);
 }
 
 void DrawShader(){
@@ -131,16 +164,14 @@ void DeInitShader(){
 }
 
 void RenderScreenshot(){
-    RenderTexture target = LoadRenderTexture(RENDER_RES);
+    RenderTexture target = LoadRenderTexture(settings.renderW, settings.renderH);
 
-    Image buf = GenImageColor(RENDER_RES, WHITE);
+    Image buf = GenImageColor(settings.renderW, settings.renderH, WHITE);
     Texture base = LoadTextureFromImage(buf);
     UnloadImage(buf);
 
-    float newRes[2] = {RENDER_RES};
+    float newRes[2] = {settings.renderW, settings.renderH};
     SetShaderValue(shader, shaderLocs.renderRes, newRes, SHADER_UNIFORM_VEC2);
-    int newNSteps = RENDER_NSTEPS;
-    SetShaderValue(shader, shaderLocs.nSteps, &newNSteps, SHADER_UNIFORM_INT);
 
     Matrix view = GetCameraViewMatrix(&camera);
     Matrix proj = GetCameraProjectionMatrix(&camera, (float)base.width / base.height);
@@ -149,11 +180,6 @@ void RenderScreenshot(){
 
     BeginTextureMode(target);
         ClearBackground(WHITE);
-        BeginMode3D(camera);
-            DrawCube((Vector3){5, 0, 0}, 10, 0.05, 0.05, RED);
-            DrawCube((Vector3){0, 5, 0}, 0.05, 10, 0.05, GREEN);
-            DrawCube((Vector3){0, 0, 5}, 0.05, 0.05, 10, BLUE);
-        EndMode3D();
         BeginShaderMode(shader);
             DrawTexture(base, 0, 0, WHITE);
         EndShaderMode();
@@ -169,45 +195,46 @@ void RenderScreenshot(){
 
     float oldRes[2] = {DRAW_RES};
     SetShaderValue(shader, shaderLocs.renderRes, oldRes, SHADER_UNIFORM_VEC2);
-    int oldNSteps = DRAW_NSTEPS;
-    SetShaderValue(shader, shaderLocs.nSteps, &oldNSteps, SHADER_UNIFORM_INT);
 
     UnloadImage(buf);
 }
 
-static int readSettings(){
-    char *settings = LoadFileText("res/input/settings.txt");
-    if (settings == NULL) return 1;
-    char *token = strtok(settings, " ");
-    size = TextToInteger(token);
-    token = strtok(NULL, " ");
-    maxVal = TextToFloat(token);
-    if (size <= 0 || maxVal <= 0.0f) return 1;
-    return 0;
+static void loadDataSettings(){
+    rini_config config = rini_load_config("res/input/settings.txt");
+    dataSettings.maxValue = getConfigFloat(&config, "MaxValue", 0, "Max steps for each ray");
+    dataSettings.size.x = getConfigInt(&config, "ResX", 0, "Number of points per column");
+    dataSettings.size.y = getConfigInt(&config, "ResY", 0, "Number of files");
+    dataSettings.size.z = getConfigInt(&config, "ResZ", 0, "Number of columns per file");
+    rini_save_config(config, "res/input/settings.txt");
+    if (dataSettings.maxValue <= 0 || dataSettings.size.x <= 0 || dataSettings.size.y <= 0 || dataSettings.size.z <= 0) TraceLog(LOG_FATAL, "Invalid settings file");
+    rini_unload_config(&config);
 }
 
 static void loadDataToTexture(GLuint id){
     glBindTexture(GL_TEXTURE_3D, id);
-    if (readSettings()) TraceLog(LOG_FATAL, "res/input/settings.txt not found\n\tNo valid settings file found\n\tsettings.txt should be formatted: \"<size>[int] <max value>[float]\" eg. \"401 1300.0\"");
 
-    float *data = malloc(size*size*size*sizeof(float));
-    memset(data, 0, size*size*size*sizeof(float));
+    int dataSize = dataSettings.size.x*dataSettings.size.y*dataSettings.size.z;
+    float *data = malloc(dataSize*sizeof(float));
+    // memset(data, 0, dataSize*sizeof(float));
 
-    float divisor = logf(maxVal+1);
+    float divisor = dataSettings.maxValue; //logf(+1)
+    int sizex = dataSettings.size.x,
+        sizey = dataSettings.size.y,
+        sizez = dataSettings.size.z;
     float maxDataValue = 0.0f;
     // load in data values
     FilePathList paths = LoadDirectoryFiles("res/input/data");
     Sort(paths.paths, paths.count);
-    for (int y = 0; y < size; y++) {
+    for (int y = 0; y < sizey; y++) {
         char *csv = LoadFileText(paths.paths[y]);
         char *token = strtok(csv, ",\n");
-        for (int x = 0; x < size; x++) {
-            for (int z = size-1; z >= 0; z--) {
-                int i = x+y*size+z*size*size;
+        for (int x = 0; x < sizex; x++) {
+            for (int z = sizez-1; z >= 0; z--) {
+                int i = x+y*sizex+z*sizex*sizey;
                 if (token != NULL) {
-                    float value = TextToInteger(token);
+                    float value = TextToFloat(token);
                     if (value == 0) data[i] = 0;
-                    else data[i] = logf(value+1)/divisor;
+                    else data[i] = 1-value/divisor; //logf(+1)
                     if (value > maxDataValue) maxDataValue = value;
                     token = strtok(NULL, ",\n");
                 }
@@ -217,9 +244,9 @@ static void loadDataToTexture(GLuint id){
     }
     UnloadDirectoryFiles(paths);
 
-    if (maxDataValue > maxVal) TraceLog(LOG_WARNING, "Max value in data %f, exceeds settings max %f", maxDataValue, maxVal);
+    if (maxDataValue > dataSettings.maxValue) TraceLog(LOG_WARNING, "Max value in data %f, exceeds settings max %f", maxDataValue, dataSettings.maxValue);
 
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, size, size, size, 0, GL_RED, GL_FLOAT, data);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, dataSettings.size.x, dataSettings.size.y, dataSettings.size.z, 0, GL_RED, GL_FLOAT, data);
 
     free(data);
 }
